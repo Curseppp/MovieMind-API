@@ -1,0 +1,15 @@
+.git
+.idea
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.DS_Store
+build
+dist
+wheels
+*.egg-info
