@@ -32,6 +32,9 @@ class Movie(Base):
         secondary=movie_genres,
         back_populates="movies",
     )
+    favorites: Mapped[list["FavoriteMovie"]] = relationship(
+        back_populates="movie",
+    )
 
 
 class Genre(Base):
