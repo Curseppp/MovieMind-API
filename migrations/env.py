@@ -7,6 +7,7 @@ from alembic import context
 
 from app.db.base import Base
 import app.models.movie  # noqa: F401
+import app.models.user  # noqa: F401
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides
