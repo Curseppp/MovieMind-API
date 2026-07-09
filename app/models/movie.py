@@ -1,7 +1,7 @@
-from datetime import date
+from datetime import datetime, date
 
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import Column, Table, ForeignKey
+from sqlalchemy import Column, Table, ForeignKey, func
 
 from app.db.base import Base
 
@@ -24,8 +24,10 @@ class Movie(Base):
     poster_path: Mapped[str | None] = mapped_column()
     vote_average: Mapped[float | None] = mapped_column()
     vote_count: Mapped[int | None] = mapped_column()
-    created_at: Mapped[date] = mapped_column()
-    updated_at: Mapped[date | None] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=func.now()
+    )
+    updated_at: Mapped[datetime | None] = mapped_column()
     genres: Mapped[list["Genre"]] = relationship(
         secondary=movie_genres,
         back_populates="movies",
