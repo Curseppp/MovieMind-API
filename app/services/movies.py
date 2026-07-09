@@ -1,9 +1,9 @@
 from app.schemas.movies import PublicMovie
-from app.services.tmdb import get_movie_by_id, TmdbLanguage
+from app.services.tmdb import tmdb_client, TmdbLanguage
 
 
 def get_movie_details(movie_id: str, language: TmdbLanguage) -> PublicMovie:
-    movie = get_movie_by_id(movie_id, language)
+    movie = tmdb_client.get_movie_by_id(movie_id, language)
 
     details = PublicMovie(
         original_title=movie["original_title"],

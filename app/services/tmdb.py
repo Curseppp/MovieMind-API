@@ -23,27 +23,32 @@ class TmdbMovieNotFoundError(TmdbError):
     pass
 
 
-def search_movies(title: str) -> dict:
-    query_params = f"query={title}&page=1"
-    url = f"{settings.tmdb_base_url}/search/movie?{query_params}"
-    response = requests.get(url, headers=headers, timeout=10)
-
-    res = response.json()
-
-    return res["results"]
 
 
-def get_movie_by_id(movie_id: str, language: TmdbLanguage) -> dict:
-    url = f"{settings.tmdb_base_url}/movie/{movie_id}"
 
-    response = requests.get(
-        url,
-        headers=headers,
-        params={"language": language.value},
-        timeout=10,
-    )
+class TmdbClient:
+    def __init__(self, base_url: str, api_key: str, timeout: int = 10):
+        self.base_url = base_url
+        self.timeout = timeout
+        self.headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
 
-    if response.status_code != 200:
+    def get_movie_by_id(self, movie_id: str, language: TmdbLanguage) -> dict:
+        response = requests.get(
+            f"{self.base_url}/movie/{movie_id}",
+            headers=self.headers,
+            params={"language": language.value},
+            timeout=self.timeout,
+        )
+
+        return self._handle_response(response, movie_id)
+
+    def _handle_response(self, response: requests.Response, movie_id: str) -> dict:
+        if response.status_code == 200:
+            return response.json()
+
         details = response.json()
         status_code = details.get("status_code")
         message = details.get("status_message", "TMDB request failed")
@@ -53,4 +58,14 @@ def get_movie_by_id(movie_id: str, language: TmdbLanguage) -> dict:
 
         raise TmdbError(f"{status_code}: {message}")
 
-    return response.json()
+    def get_tmdb_poster_url(self, path: str | None, size: str = "w500") -> str | None:
+        if not path:
+            return None
+
+        return f"{settings.tmdb_image_url}/{size}{path}"
+
+
+tmdb_client = TmdbClient(
+    base_url=settings.tmdb_base_url,
+    api_key=settings.tmdb_api_key,
+)
