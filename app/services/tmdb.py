@@ -23,9 +23,6 @@ class TmdbMovieNotFoundError(TmdbError):
     pass
 
 
-
-
-
 class TmdbClient:
     def __init__(self, base_url: str, api_key: str, timeout: int = 10):
         self.base_url = base_url
