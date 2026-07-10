@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
+from app.api.deps import CurrentUserDep
 from app.db.session import SessionDep
 from app.schemas.favorites import FavoriteMovieResponse
 from app.schemas.movies import PublicMovie
@@ -40,14 +41,14 @@ def get_movie(
 def add_movie_to_favorite(
     session: SessionDep,
     movie_id: int,
-    user_id: int,
+    user: CurrentUserDep,
     language: TmdbLanguage = TmdbLanguage.EN_US,
 ) -> FavoriteMovieResponse:
     try:
         return FavoriteMovieResponse.model_validate(
             add_movie_to_user_favorites(
                 db=session,
-                user_id=user_id,
+                user_id=user.id,
                 tmdb_id=movie_id,
                 language=language,
             )

@@ -1,20 +1,15 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 
 from app.db.session import SessionDep
 from app.services.register import UserAlreadyExistsError
 from app.schemas.users import UserRegister, UserResponse, Token
 from app.services.register import register_user
-from app.services.login import login_user, InvalidCredentialsError
+from app.services.auth import login_user, InvalidCredentialsError
 
 router = APIRouter(prefix="/auth")
-
-
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/token",
-)
 
 
 @router.post(

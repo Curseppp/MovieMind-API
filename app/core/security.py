@@ -1,9 +1,14 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
 from app.core.config import settings
+
+
+class InvalidAccessTokenError(Exception):
+    pass
 
 
 password_hasher = PasswordHash.recommended()
@@ -21,9 +26,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(user_id: int) -> str:
     now = datetime.now(timezone.utc)
-    expires_at = now + timedelta(
-        minutes=settings.access_token_expire_minutes
-    )
+    expires_at = now + timedelta(minutes=settings.access_token_expire_minutes)
 
     payload = {
         "sub": str(user_id),
@@ -37,3 +40,15 @@ def create_access_token(user_id: int) -> str:
         algorithm=settings.algorithm,
     )
 
+
+def decode_access_token(token: str) -> int:
+    try:
+        payload = jwt.decode(
+            token, settings.secret_key, algorithms=[settings.algorithm]
+        )
+        user_id: int = payload["sub"]
+        if user_id is None:
+            raise InvalidAccessTokenError
+        return int(user_id)
+    except (InvalidTokenError, TypeError, ValueError) as exc:
+        raise InvalidAccessTokenError() from exc
