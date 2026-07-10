@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+from app.core.config import settings
 from app.db.session import SessionDep
 from app.services.register import UserAlreadyExistsError
 from app.schemas.users import UserRegister, UserResponse, Token
@@ -29,15 +30,16 @@ def register(db: SessionDep, user: UserRegister):
 
 
 @router.post("/token", response_model=Token)
-def token(
+def issue_token(
+    response: Response,
     db: SessionDep,
     form_data: Annotated[
         OAuth2PasswordRequestForm,
         Depends(),
     ],
-):
+) -> Token:
     try:
-        access_token = login_user(
+        tokens = login_user(
             db=db,
             email=form_data.username,
             password=form_data.password,
@@ -49,7 +51,17 @@ def token(
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens.refresh_token,
+        httponly=True,
+        secure=settings.refresh_cookie_secure,
+        samesite="strict",
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        path="/auth",
+    )
+
     return Token(
-        access_token=access_token,
+        access_token=tokens.access_token,
         token_type="bearer",
     )
