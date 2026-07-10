@@ -20,5 +20,19 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.5.0",
+    "pytest>=9.1.1",
+    "pytest-env>=1.6.0",
     "ruff>=0.15.20",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.pytest_env]
+APP_ENV = "test"
+DATABASE_URL = "sqlite://"
+TMDB_API_KEY = "test-api-key"
+TMDB_IMAGE_URL = "https://image.tmdb.org/t/p"
+SECRET_KEY = "test-secret-key-that-is-at-least-32-bytes"
