@@ -1,17 +1,10 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from pwdlib import PasswordHash
 
 from app.models.user import User
 from app.crud.users import get_user_by_email, create_user
 from app.schemas.users import UserRegister
-
-
-password_hasher = PasswordHash.recommended()
-
-
-def hash_password(password: str) -> str:
-    return password_hasher.hash(password)
+from app.core.security import hash_password
 
 
 class UserAlreadyExistsError(Exception):
