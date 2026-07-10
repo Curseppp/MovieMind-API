@@ -22,10 +22,7 @@ oauth2_scheme = OAuth2PasswordBearer(
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def register(
-        db: SessionDep,
-        user: UserRegister
-):
+def register(db: SessionDep, user: UserRegister):
     try:
         user = register_user(db, user)
         return user
@@ -38,11 +35,11 @@ def register(
 
 @router.post("/token", response_model=Token)
 def token(
-        db: SessionDep,
-        form_data: Annotated[
-            OAuth2PasswordRequestForm,
-            Depends(),
-        ],
+    db: SessionDep,
+    form_data: Annotated[
+        OAuth2PasswordRequestForm,
+        Depends(),
+    ],
 ):
     try:
         access_token = login_user(
@@ -61,7 +58,3 @@ def token(
         access_token=access_token,
         token_type="bearer",
     )
-
-
-
-

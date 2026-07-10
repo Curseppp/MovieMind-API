@@ -28,9 +28,7 @@ class Movie(Base):
     poster_path: Mapped[str | None] = mapped_column()
     vote_average: Mapped[float | None] = mapped_column()
     vote_count: Mapped[int | None] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime | None] = mapped_column()
     genres: Mapped[list["Genre"]] = relationship(
         secondary=movie_genres,

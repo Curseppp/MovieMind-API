@@ -9,12 +9,9 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    return db.scalar(
-        select(User).where(User.email == email)
-    )
+    return db.scalar(select(User).where(User.email == email))
 
 
 def create_user(db: Session, user: User) -> User:
     db.add(user)
     return user
-

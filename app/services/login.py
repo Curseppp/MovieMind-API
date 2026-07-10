@@ -9,11 +9,7 @@ class InvalidCredentialsError(Exception):
     pass
 
 
-def authenticate_user(
-  db: Session,
-  email: str,
-  password: str
-) -> User |  None:
+def authenticate_user(db: Session, email: str, password: str) -> User | None:
     user = get_user_by_email(db, email)
 
     if not user:
@@ -33,5 +29,3 @@ def login_user(db: Session, email: str, password: str) -> str:
         raise InvalidCredentialsError()
 
     return create_access_token(user.id)
-
-

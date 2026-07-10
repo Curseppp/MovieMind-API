@@ -29,9 +29,7 @@ class FavoriteMovie(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     user: Mapped["User"] = relationship(
         back_populates="favorites",

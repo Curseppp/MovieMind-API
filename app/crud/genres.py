@@ -11,9 +11,7 @@ def get_genres_by_tmdb_ids(
     if not tmdb_ids:
         return {}
 
-    genres = db.scalars(
-        select(Genre).where(Genre.tmdb_id.in_(tmdb_ids))
-    ).all()
+    genres = db.scalars(select(Genre).where(Genre.tmdb_id.in_(tmdb_ids))).all()
     return {genre.tmdb_id: genre for genre in genres}
 
 
