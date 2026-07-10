@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from sqlalchemy import select
 
 from app.db.session import SessionDep
+from app.services.health import check_database
 
 
 router = APIRouter(prefix="/health", tags=["Health"])
@@ -14,5 +14,5 @@ def root():
 
 @router.get("/db")
 def ping(db: SessionDep):
-    db.execute(select(1)).scalar_one()
+    check_database(db)
     return {"message": "Db OK"}
