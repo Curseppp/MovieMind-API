@@ -1,12 +1,20 @@
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.db.session import SessionDep
 from app.services.register import UserAlreadyExistsError
-from app.schemas.users import UserRegister, UserResponse, UserLogin, Token
+from app.schemas.users import UserRegister, UserResponse, Token
 from app.services.register import register_user
 from app.services.login import login_user, InvalidCredentialsError
 
 router = APIRouter(prefix="/auth")
+
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/auth/token",
+)
 
 
 @router.post(
@@ -31,13 +39,16 @@ def register(
 @router.post("/token", response_model=Token)
 def token(
         db: SessionDep,
-        user_in: UserLogin,
+        form_data: Annotated[
+            OAuth2PasswordRequestForm,
+            Depends(),
+        ],
 ):
     try:
         access_token = login_user(
-            db,
-            user_in.email,
-            user_in.password,
+            db=db,
+            email=form_data.username,
+            password=form_data.password,
         )
     except InvalidCredentialsError as exc:
         raise HTTPException(

@@ -7,11 +7,6 @@ class UserRegister(BaseModel):
     password: str = Field(min_length=15, max_length=128)
 
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
