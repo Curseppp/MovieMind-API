@@ -1,9 +1,13 @@
 from datetime import datetime, date
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy import Column, Table, ForeignKey, func
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.user import FavoriteMovie
 
 
 movie_genres = Table(

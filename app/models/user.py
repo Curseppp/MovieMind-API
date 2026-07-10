@@ -1,9 +1,13 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy import ForeignKey, func
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.movie import Movie
 
 
 class User(Base):
