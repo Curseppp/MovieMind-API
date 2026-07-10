@@ -16,6 +16,5 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 
 def create_user(db: Session, user: User) -> User:
     db.add(user)
-    db.flush()
     return user
 
