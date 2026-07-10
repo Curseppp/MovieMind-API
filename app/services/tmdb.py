@@ -32,7 +32,7 @@ class TmdbClient:
             "Authorization": f"Bearer {api_key}",
         }
 
-    def get_movie_by_id(self, movie_id: str, language: TmdbLanguage) -> dict:
+    def get_movie_by_id(self, movie_id: int, language: TmdbLanguage) -> dict:
         response = requests.get(
             f"{self.base_url}/movie/{movie_id}",
             headers=self.headers,
@@ -42,7 +42,7 @@ class TmdbClient:
 
         return self._handle_response(response, movie_id)
 
-    def _handle_response(self, response: requests.Response, movie_id: str) -> dict:
+    def _handle_response(self, response: requests.Response, movie_id: int) -> dict:
         if response.status_code == 200:
             return response.json()
 
