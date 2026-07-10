@@ -48,9 +48,9 @@ def decode_access_token(token: str) -> int:
         payload = jwt.decode(
             token, settings.secret_key, algorithms=[settings.algorithm]
         )
-        user_id: int = payload["sub"]
+        user_id = payload.get("sub")
         if user_id is None:
-            raise InvalidAccessTokenError
+            raise InvalidAccessTokenError()
         return int(user_id)
     except (InvalidTokenError, TypeError, ValueError) as exc:
         raise InvalidAccessTokenError() from exc

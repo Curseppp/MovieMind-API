@@ -13,7 +13,11 @@ from app.core.security import (
     hash_refresh_token,
     verify_password,
 )
-from app.crud.auth_sessions import create_auth_session
+from app.crud.auth_sessions import (
+    create_auth_session,
+    get_auth_session_by_token_hash,
+    rotate_auth_session,
+)
 from app.crud.users import get_user_by_email, get_user_by_id
 from app.models import AuthSession, User
 
@@ -26,6 +30,22 @@ class IssuedTokens:
 
 class InvalidCredentialsError(Exception):
     pass
+
+
+class InvalidRefreshTokenError(Exception):
+    pass
+
+
+def _refresh_token_expires_at() -> datetime:
+    return datetime.now(timezone.utc) + timedelta(
+        days=settings.refresh_token_expire_days
+    )
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
@@ -57,8 +77,7 @@ def login_user(
     auth_session = AuthSession(
         user_id=user.id,
         refresh_token_hash=hash_refresh_token(refresh_token),
-        expires_at=datetime.now(timezone.utc)
-        + timedelta(days=settings.refresh_token_expire_days),
+        expires_at=_refresh_token_expires_at(),
     )
 
     try:
@@ -71,6 +90,42 @@ def login_user(
     return IssuedTokens(
         access_token=access_token,
         refresh_token=refresh_token,
+    )
+
+
+def refresh_tokens(db: Session, refresh_token: str) -> IssuedTokens:
+    auth_session = get_auth_session_by_token_hash(
+        db,
+        hash_refresh_token(refresh_token),
+    )
+
+    if (
+        auth_session is None
+        or auth_session.revoked_at is not None
+        or _as_utc(auth_session.expires_at) <= datetime.now(timezone.utc)
+    ):
+        raise InvalidRefreshTokenError()
+
+    user = get_user_by_id(db, auth_session.user_id)
+    if user is None:
+        raise InvalidRefreshTokenError()
+
+    new_refresh_token = generate_refresh_token()
+    rotate_auth_session(
+        auth_session,
+        token_hash=hash_refresh_token(new_refresh_token),
+        expires_at=_refresh_token_expires_at(),
+    )
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return IssuedTokens(
+        access_token=create_access_token(user.id),
+        refresh_token=new_refresh_token,
     )
 
 
