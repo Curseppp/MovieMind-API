@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.core.security import decode_access_token, hash_refresh_token
 from app.db.session import get_db
 from app.models import AuthSession, User
+from app.models.user import RefreshToken
 from tests.constants import TEST_PASSWORD
 
 
@@ -23,12 +24,22 @@ def login(client: TestClient, email: str = "user@example.com"):
     )
 
 
-def get_auth_session(db_session: Session, refresh_token: str) -> AuthSession:
-    auth_session = db_session.scalar(
-        select(AuthSession).where(
-            AuthSession.refresh_token_hash == hash_refresh_token(refresh_token)
+def get_refresh_token_record(
+    db_session: Session,
+    refresh_token: str,
+) -> RefreshToken:
+    token = db_session.scalar(
+        select(RefreshToken).where(
+            RefreshToken.refresh_token_hash == hash_refresh_token(refresh_token)
         )
     )
+    assert token is not None
+    return token
+
+
+def get_auth_session(db_session: Session, refresh_token: str) -> AuthSession:
+    token = get_refresh_token_record(db_session, refresh_token)
+    auth_session = db_session.get(AuthSession, token.session_id)
     assert auth_session is not None
     return auth_session
 
@@ -93,7 +104,7 @@ def test_refresh_rotates_cookie_and_returns_new_access_token(
     login_response = login(client, user.email)
     old_refresh_token = login_response.cookies["refresh_token"]
     old_session = get_auth_session(db_session, old_refresh_token)
-    old_session_id = old_session.id
+    old_token = get_refresh_token_record(db_session, old_refresh_token)
 
     response = client.post("/auth/refresh")
 
@@ -102,15 +113,23 @@ def test_refresh_rotates_cookie_and_returns_new_access_token(
     new_refresh_token = response.cookies["refresh_token"]
     assert new_refresh_token != old_refresh_token
     new_session = get_auth_session(db_session, new_refresh_token)
-    assert new_session.id == old_session_id
+    new_token = get_refresh_token_record(db_session, new_refresh_token)
+    db_session.refresh(old_token)
+
+    assert new_session.id == old_session.id
+    assert new_token.session_id == old_session.id
+    assert old_token.revoked_at is not None
+    assert new_token.revoked_at is None
 
 
 def test_refresh_rejects_replayed_token(
     client: TestClient,
+    db_session: Session,
     user: User,
 ) -> None:
     login_response = login(client, user.email)
     old_refresh_token = login_response.cookies["refresh_token"]
+    auth_session = get_auth_session(db_session, old_refresh_token)
     assert client.post("/auth/refresh").status_code == 200
     client.cookies.set(
         "refresh_token",
@@ -123,6 +142,8 @@ def test_refresh_rejects_replayed_token(
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Invalid or expired refresh token"}
+    db_session.refresh(auth_session)
+    assert auth_session.revoked_at is not None
 
 
 def test_refresh_rejects_missing_cookie(client: TestClient) -> None:
@@ -170,6 +191,27 @@ def test_refresh_rejects_expired_or_revoked_session(
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Invalid or expired refresh token"}
+
+
+def test_refresh_rejects_expired_token_without_revoking_session(
+    client: TestClient,
+    db_session: Session,
+    user: User,
+) -> None:
+    login_response = login(client, user.email)
+    refresh_token = login_response.cookies["refresh_token"]
+    auth_session = get_auth_session(db_session, refresh_token)
+    token = get_refresh_token_record(db_session, refresh_token)
+
+    token.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    db_session.commit()
+
+    response = client.post("/auth/refresh")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Invalid or expired refresh token"}
+    db_session.refresh(auth_session)
+    assert auth_session.revoked_at is None
 
 
 @pytest.fixture()

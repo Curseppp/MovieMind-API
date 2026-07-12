@@ -13,8 +13,9 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
 
-    refresh_token_expire_days: int = 30
+    refresh_token_expire_days: int = 7
     refresh_cookie_secure: bool = False
+    session_expire_days: int = 28
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

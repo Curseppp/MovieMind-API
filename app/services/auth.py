@@ -15,11 +15,12 @@ from app.core.security import (
 )
 from app.crud.auth_sessions import (
     create_auth_session,
-    get_auth_session_by_token_hash,
-    rotate_auth_session,
+    create_refresh_token,
+    get_refresh_token_by_token_hash,
+    get_auth_session_by_session_id,
 )
 from app.crud.users import get_user_by_email, get_user_by_id
-from app.models import AuthSession, User
+from app.models.user import AuthSession, User, RefreshToken
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,12 @@ class InvalidRefreshTokenError(Exception):
 def _refresh_token_expires_at() -> datetime:
     return datetime.now(timezone.utc) + timedelta(
         days=settings.refresh_token_expire_days
+    )
+
+
+def _session_expires_at() -> datetime:
+    return datetime.now(timezone.utc) + timedelta(
+        days=settings.session_expire_days
     )
 
 
@@ -71,17 +78,23 @@ def login_user(
     if user is None:
         raise InvalidCredentialsError()
 
-    access_token = create_access_token(user.id)
-    refresh_token = generate_refresh_token()
-
-    auth_session = AuthSession(
-        user_id=user.id,
-        refresh_token_hash=hash_refresh_token(refresh_token),
-        expires_at=_refresh_token_expires_at(),
-    )
-
     try:
+        auth_session = AuthSession(
+            user_id=user.id,
+            expires_at=_session_expires_at(),
+        )
+
+        access_token = create_access_token(user.id)
+        refresh_token = generate_refresh_token()
+
         create_auth_session(db, auth_session)
+
+        token = RefreshToken(
+            refresh_token_hash=hash_refresh_token(refresh_token),
+            session_id=auth_session.id,
+            expires_at=_refresh_token_expires_at(),
+        )
+        create_refresh_token(db, token)
         db.commit()
     except Exception:
         db.rollback()
@@ -94,37 +107,69 @@ def login_user(
 
 
 def refresh_tokens(db: Session, refresh_token: str) -> IssuedTokens:
-    auth_session = get_auth_session_by_token_hash(
+    token = get_refresh_token_by_token_hash(
         db,
         hash_refresh_token(refresh_token),
     )
 
+    if token is None:
+        raise InvalidRefreshTokenError()
+
+    auth_session = get_auth_session_by_session_id(
+        db, session_id=token.session_id
+    )
+
+    if auth_session is None:
+        raise InvalidRefreshTokenError()
+
     if (
-        auth_session is None
+        _as_utc(auth_session.expires_at) <= datetime.now(timezone.utc)
         or auth_session.revoked_at is not None
-        or _as_utc(auth_session.expires_at) <= datetime.now(timezone.utc)
     ):
         raise InvalidRefreshTokenError()
+
+    if _as_utc(token.expires_at) <= datetime.now(timezone.utc):
+        raise InvalidRefreshTokenError()
+
+    if token.revoked_at is not None:
+        auth_session.revoked_at = datetime.now(timezone.utc)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        raise InvalidRefreshTokenError
 
     user = get_user_by_id(db, auth_session.user_id)
     if user is None:
         raise InvalidRefreshTokenError()
 
+    new_access_token = create_access_token(
+        user.id,
+    )
+    token.revoked_at = datetime.now(timezone.utc)
     new_refresh_token = generate_refresh_token()
-    rotate_auth_session(
-        auth_session,
-        token_hash=hash_refresh_token(new_refresh_token),
-        expires_at=_refresh_token_expires_at(),
+    new_token = RefreshToken(
+        refresh_token_hash=hash_refresh_token(new_refresh_token),
+        session_id=auth_session.id,
+        expires_at=min(
+            _refresh_token_expires_at(),
+            _as_utc(auth_session.expires_at),
+),
     )
 
     try:
+        create_refresh_token(
+            db,
+            new_token
+        )
         db.commit()
     except Exception:
         db.rollback()
         raise
 
     return IssuedTokens(
-        access_token=create_access_token(user.id),
+        access_token=new_access_token,
         refresh_token=new_refresh_token,
     )
 
