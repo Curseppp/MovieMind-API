@@ -14,6 +14,7 @@ from app.services.auth import (
     InvalidRefreshTokenError,
     login_user,
     refresh_tokens,
+    revoke_session,
 )
 
 router = APIRouter(prefix="/auth")
@@ -114,3 +115,20 @@ def refresh_access_token(
         access_token=tokens.access_token,
         token_type="bearer",
     )
+
+
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def logout(
+        db: SessionDep,
+        response: Response,
+        refresh_token: Annotated[str | None, Cookie()] = None,
+) -> None:
+    if refresh_token is not None:
+        revoke_session(db, refresh_token)
+
+    delete_refresh_cookie(response)
+
+

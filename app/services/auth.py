@@ -185,3 +185,31 @@ def get_user_from_token(
         raise InvalidAccessTokenError()
 
     return user
+
+
+def revoke_session(
+        db: Session,
+        refresh_token: str,
+) -> None:
+    token = get_refresh_token_by_token_hash(
+        db,
+        hash_refresh_token(refresh_token),
+    )
+
+    if token is None:
+        return
+
+    auth_session = get_auth_session_by_session_id(
+        db, session_id=token.session_id
+    )
+
+    if auth_session is None:
+        return
+
+    try:
+        token.revoked_at = token.revoked_at or datetime.now(timezone.utc)
+        auth_session.revoked_at = auth_session.revoked_at or datetime.now(timezone.utc)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
