@@ -17,7 +17,7 @@ from app.crud.auth_sessions import (
     create_auth_session,
     create_refresh_token,
     get_refresh_token_by_token_hash,
-    get_auth_session_by_session_id,
+    get_auth_session_by_session_id, revoke_all_sessions_by_user_id,
 )
 from app.crud.users import get_user_by_email, get_user_by_id
 from app.models.user import AuthSession, User, RefreshToken
@@ -204,3 +204,20 @@ def revoke_session(
     except Exception:
         db.rollback()
         raise
+
+
+def revoke_all_sessions(
+    db: Session,
+    password: str,
+    current_user: User,
+) -> None:
+    if not verify_password(password, current_user.password_hash):
+        raise InvalidCredentialsError
+
+    try:
+        revoke_all_sessions_by_user_id(db, current_user.id)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+

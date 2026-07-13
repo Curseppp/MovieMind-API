@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.models import AuthSession
@@ -41,3 +42,16 @@ def get_auth_session_by_session_id(
         select(AuthSession).where(AuthSession.id == session_id).with_for_update()
     )
     return db.scalar(statement)
+
+
+def revoke_all_sessions_by_user_id(db: Session, user_id: int) -> None:
+    statement = (
+        update(AuthSession)
+        .where(
+            AuthSession.user_id == user_id,
+            AuthSession.revoked_at.is_(None),
+        )
+        .values(revoked_at=datetime.now(timezone.utc))
+    )
+
+    db.execute(statement)

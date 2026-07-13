@@ -7,15 +7,16 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.db.session import SessionDep
 from app.services.register import UserAlreadyExistsError
-from app.schemas.users import UserRegister, UserResponse, Token
+from app.schemas.users import UserRegister, UserResponse, Token, LogoutAllRequest
 from app.services.register import register_user
 from app.services.auth import (
     InvalidCredentialsError,
     InvalidRefreshTokenError,
     login_user,
     refresh_tokens,
-    revoke_session,
+    revoke_session, revoke_all_sessions,
 )
+from app.api.deps import CurrentUserDep
 
 router = APIRouter(prefix="/auth")
 
@@ -128,5 +129,27 @@ def logout(
 ) -> None:
     if refresh_token is not None:
         revoke_session(db, refresh_token)
+
+    delete_refresh_cookie(response)
+
+
+@router.post(
+    "/logout/all_devices",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def logout_all_devices(
+    db: SessionDep,
+    response: Response,
+    user: CurrentUserDep,
+    credential: LogoutAllRequest,
+) -> None:
+    try:
+        revoke_all_sessions(db, credential.password, user)
+    except InvalidCredentialsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
 
     delete_refresh_cookie(response)
