@@ -44,9 +44,7 @@ def _refresh_token_expires_at() -> datetime:
 
 
 def _session_expires_at() -> datetime:
-    return datetime.now(timezone.utc) + timedelta(
-        days=settings.session_expire_days
-    )
+    return datetime.now(timezone.utc) + timedelta(days=settings.session_expire_days)
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -115,9 +113,7 @@ def refresh_tokens(db: Session, refresh_token: str) -> IssuedTokens:
     if token is None:
         raise InvalidRefreshTokenError()
 
-    auth_session = get_auth_session_by_session_id(
-        db, session_id=token.session_id
-    )
+    auth_session = get_auth_session_by_session_id(db, session_id=token.session_id)
 
     if auth_session is None:
         raise InvalidRefreshTokenError()
@@ -155,14 +151,11 @@ def refresh_tokens(db: Session, refresh_token: str) -> IssuedTokens:
         expires_at=min(
             _refresh_token_expires_at(),
             _as_utc(auth_session.expires_at),
-),
+        ),
     )
 
     try:
-        create_refresh_token(
-            db,
-            new_token
-        )
+        create_refresh_token(db, new_token)
         db.commit()
     except Exception:
         db.rollback()
@@ -188,8 +181,8 @@ def get_user_from_token(
 
 
 def revoke_session(
-        db: Session,
-        refresh_token: str,
+    db: Session,
+    refresh_token: str,
 ) -> None:
     token = get_refresh_token_by_token_hash(
         db,
@@ -199,9 +192,7 @@ def revoke_session(
     if token is None:
         return
 
-    auth_session = get_auth_session_by_session_id(
-        db, session_id=token.session_id
-    )
+    auth_session = get_auth_session_by_session_id(db, session_id=token.session_id)
 
     if auth_session is None:
         return

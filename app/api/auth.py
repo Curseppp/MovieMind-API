@@ -122,13 +122,11 @@ def refresh_access_token(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def logout(
-        db: SessionDep,
-        response: Response,
-        refresh_token: Annotated[str | None, Cookie()] = None,
+    db: SessionDep,
+    response: Response,
+    refresh_token: Annotated[str | None, Cookie()] = None,
 ) -> None:
     if refresh_token is not None:
         revoke_session(db, refresh_token)
 
     delete_refresh_cookie(response)
-
-

@@ -9,6 +9,7 @@ from pwdlib import PasswordHash
 from app.core.config import settings
 from app.models.user import RefreshToken
 
+
 class InvalidAccessTokenError(Exception):
     pass
 

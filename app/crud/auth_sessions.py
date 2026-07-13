@@ -16,10 +16,7 @@ def create_auth_session(
     return auth_session
 
 
-def create_refresh_token(
-        db: Session,
-        refresh_token: RefreshToken
-) -> RefreshToken:
+def create_refresh_token(db: Session, refresh_token: RefreshToken) -> RefreshToken:
     db.add(refresh_token)
     return refresh_token
 
@@ -36,14 +33,11 @@ def get_refresh_token_by_token_hash(
     return db.scalar(statement)
 
 
-
 def get_auth_session_by_session_id(
     db: Session,
     session_id: UUID,
 ) -> AuthSession | None:
     statement = (
-        select(AuthSession)
-        .where(AuthSession.id == session_id)
-        .with_for_update()
+        select(AuthSession).where(AuthSession.id == session_id).with_for_update()
     )
     return db.scalar(statement)
