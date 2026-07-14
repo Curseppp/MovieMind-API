@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Genre(BaseModel):
@@ -22,3 +22,5 @@ class PublicMovie(BaseModel):
     vote_average: float
     vote_count: int
     poster_url: str | None
+
+    model_config = ConfigDict(from_attributes=True)

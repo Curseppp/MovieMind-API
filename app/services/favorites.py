@@ -2,7 +2,12 @@ from sqlalchemy.orm import Session
 
 from app.crud import favorites as favorites_crud
 from app.crud import users as users_crud
-from app.models import FavoriteMovie
+from app.models import FavoriteMovie, User
+from app.crud.movies import (
+    get_favorite_movies_by_user_id as crud_get_favorite_movies,
+    to_public_movie,
+)
+from app.schemas.movies import PublicMovie
 from app.services.movies import get_or_create_movie_from_tmdb
 from app.services.tmdb import TmdbLanguage
 
@@ -42,3 +47,19 @@ def add_movie_to_user_favorites(
     except Exception:
         db.rollback()
         raise
+
+
+def get_favorite_movies(
+    db: Session,
+    user: User,
+    skip: int,
+    limit: int,
+) -> list[PublicMovie]:
+    movies = crud_get_favorite_movies(
+        db,
+        user.id,
+        skip,
+        limit,
+    )
+
+    return [to_public_movie(movie) for movie in movies]

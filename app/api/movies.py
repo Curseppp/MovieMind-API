@@ -8,6 +8,7 @@ from app.services.favorites import (
     FavoriteAlreadyExistsError,
     UserNotFoundError,
     add_movie_to_user_favorites,
+    get_favorite_movies,
 )
 from app.services.movies import get_movie_details
 from app.services.tmdb import TmdbError, TmdbLanguage, TmdbMovieNotFoundError
@@ -73,3 +74,13 @@ def add_movie_to_favorite(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),
         ) from exc
+
+
+@router.get("/", response_model=list[PublicMovie])
+def get_my_favorites(
+    db: SessionDep,
+    user: CurrentUserDep,
+    skip: int = 0,
+    limit: int = 10,
+):
+    return get_favorite_movies(db, user, skip, limit)
