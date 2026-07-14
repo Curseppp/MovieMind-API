@@ -14,11 +14,12 @@ from app.services.auth import (
     InvalidRefreshTokenError,
     login_user,
     refresh_tokens,
-    revoke_session, revoke_all_sessions,
+    revoke_session,
+    revoke_all_sessions,
 )
 from app.api.deps import CurrentUserDep
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 def set_refresh_cookie(response: Response, refresh_token: str) -> None:
