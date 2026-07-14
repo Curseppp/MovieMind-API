@@ -33,12 +33,19 @@ class TmdbClient:
         }
 
     def get_movie_by_id(self, movie_id: int, language: TmdbLanguage) -> dict:
-        response = requests.get(
-            f"{self.base_url}/movie/{movie_id}",
-            headers=self.headers,
-            params={"language": language.value},
-            timeout=self.timeout,
-        )
+        try:
+            response = requests.get(
+                f"{self.base_url}/movie/{movie_id}",
+                headers=self.headers,
+                params={"language": language.value},
+                timeout=self.timeout,
+            )
+        except requests.Timeout as exc:
+            raise TmdbError("TMDB request timed out") from exc
+        except requests.ConnectionError as exc:
+            raise TmdbError("Unable to connect to TMDB") from exc
+        except requests.RequestException as exc:
+            raise TmdbError("TMDB request failed") from exc
 
         return self._handle_response(response, movie_id)
 
