@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict
+from app.services.tmdb import TmdbLanguage
 
 
 class Genre(BaseModel):
@@ -24,3 +25,16 @@ class PublicMovie(BaseModel):
     poster_url: str | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class QueryParams(BaseModel):
+    query: str
+    page: int | None = None
+    per_page: int | None = None
+    primary_release_year: str | None = None
+    region: str | None = None
+    language: TmdbLanguage | None = TmdbLanguage.EN_US
+    year: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+

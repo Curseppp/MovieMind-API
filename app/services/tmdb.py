@@ -49,6 +49,21 @@ class TmdbClient:
 
         return self._handle_response(response, movie_id)
 
+
+    def get_tmdb_movies_by_title(self, payload: dict) -> dict:
+        try:
+            r = requests.get(
+                f"{self.base_url}/search/movie",
+                headers=self.headers,
+                params=payload,
+                timeout=self.timeout,
+            )
+        except requests.Timeout as exc:
+            raise TmdbError("TMDB request timed out") from exc
+
+        return self._handle_response(r)
+
+
     def get_all_tmdb_movies_genres(self) -> dict:
         try:
             r = requests.get(

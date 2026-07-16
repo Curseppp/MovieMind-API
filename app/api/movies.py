@@ -3,14 +3,14 @@ from fastapi import APIRouter, HTTPException, status
 from app.api.deps import CurrentUserDep
 from app.db.session import SessionDep
 from app.schemas.favorites import FavoriteMovieResponse
-from app.schemas.movies import PublicMovie
+from app.schemas.movies import PublicMovie, QueryParams
 from app.services.favorites import (
     FavoriteAlreadyExistsError,
     UserNotFoundError,
     add_movie_to_user_favorites,
     get_favorite_movies,
 )
-from app.services.movies import get_movie_details, set_genres
+from app.services.movies import get_movie_details, search_movie, set_genres
 from app.services.tmdb import TmdbError, TmdbLanguage, TmdbMovieNotFoundError
 
 router = APIRouter(prefix="/movies", tags=["Movies"])
@@ -34,11 +34,24 @@ def get_movie(
         ) from exc
 
 
+@router.post("/search", response_model=list[PublicMovie])
+def search_movies(
+    db: SessionDep,
+    query: QueryParams
+):
+    movies = search_movie(db, query)
+
+    return movies
+
+
 @router.post("/genre/list")
 def update_genres(
         db: SessionDep,
+
 ) -> None:
     set_genres(db)
+
+
 
 
 @router.post(

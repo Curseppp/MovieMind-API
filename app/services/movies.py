@@ -5,8 +5,32 @@ from sqlalchemy.orm import Session
 from app.crud import genres as genres_crud
 from app.crud import movies as movies_crud
 from app.models import Genre, Movie
-from app.schemas.movies import PublicMovie
+from app.schemas.movies import PublicMovie, QueryParams
 from app.services.tmdb import TmdbLanguage, tmdb_client
+
+
+def search_movie(db: Session,query: QueryParams) -> list[PublicMovie]:
+    payload = dict(query)
+    res = tmdb_client.get_tmdb_movies_by_title(payload).get("results", [])
+    movies = []
+
+    for movie in res:
+        poster_path = movie.get("poster_path")
+        genres = genres_crud.get_genres_by_tmdb_ids(db, movie["genre_ids"])
+        details = PublicMovie(
+            original_title=movie["original_title"],
+            release_date=movie["release_date"],
+            genres=[
+                genre.name
+                for genre in genres.values()
+            ],
+            vote_average=movie["vote_average"],
+            vote_count=movie["vote_count"],
+            poster_url=tmdb_client.get_tmdb_poster_url(poster_path),
+        )
+        movies.append(details)
+
+    return movies
 
 
 def get_movie_details(movie_id: int, language: TmdbLanguage) -> PublicMovie:
