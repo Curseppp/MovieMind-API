@@ -37,9 +37,11 @@ def get_movie(
 @router.post("/search", response_model=list[PublicMovie])
 def search_movies(
     db: SessionDep,
-    query: QueryParams
+    query: QueryParams,
+    skip: int = 0,
+    limit: int = 10,
 ):
-    movies = search_movie(db, query)
+    movies = search_movie(db, query, skip, limit)
 
     return movies
 

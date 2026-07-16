@@ -9,26 +9,40 @@ from app.schemas.movies import PublicMovie, QueryParams
 from app.services.tmdb import TmdbLanguage, tmdb_client
 
 
-def search_movie(db: Session,query: QueryParams) -> list[PublicMovie]:
+def search_movie(db: Session, query: QueryParams, skip: int, limit: int) -> list[PublicMovie]:
     payload = dict(query)
-    res = tmdb_client.get_tmdb_movies_by_title(payload).get("results", [])
+    start_page = skip // 20 + 1
+    offset_page = skip % 20
     movies = []
+    payload["page"] = start_page
+    total_pages = 999
 
-    for movie in res:
-        poster_path = movie.get("poster_path")
-        genres = genres_crud.get_genres_by_tmdb_ids(db, movie["genre_ids"])
-        details = PublicMovie(
-            original_title=movie["original_title"],
-            release_date=movie["release_date"],
-            genres=[
-                genre.name
-                for genre in genres.values()
-            ],
-            vote_average=movie["vote_average"],
-            vote_count=movie["vote_count"],
-            poster_url=tmdb_client.get_tmdb_poster_url(poster_path),
-        )
-        movies.append(details)
+
+    while len(movies) < limit and payload["page"] <= total_pages:
+        response = tmdb_client.get_tmdb_movies_by_title(payload)
+        if payload["page"] == start_page:
+            results = response.get("results", [])[offset_page:]
+            total_pages = response.get("total_pages")
+        else:
+            results = response.get("results", [])
+
+        for movie in results:
+            if len(movies) < limit:
+                poster_path = movie.get("poster_path")
+                genres = genres_crud.get_genres_by_tmdb_ids(db, movie["genre_ids"])
+                details = PublicMovie(
+                    original_title=movie["original_title"],
+                    release_date=movie["release_date"],
+                    genres=[
+                        genre.name
+                        for genre in genres.values()
+                    ],
+                    vote_average=movie["vote_average"],
+                    vote_count=movie["vote_count"],
+                    poster_url=tmdb_client.get_tmdb_poster_url(poster_path),
+                )
+                movies.append(details)
+        payload["page"] += 1
 
     return movies
 

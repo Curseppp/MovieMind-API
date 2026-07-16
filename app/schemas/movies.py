@@ -28,12 +28,11 @@ class PublicMovie(BaseModel):
 
 
 class QueryParams(BaseModel):
-    query: str
-    page: int | None = None
-    per_page: int | None = None
+    query: str = "Hitman"
+    page: int = 1
     primary_release_year: str | None = None
     region: str | None = None
-    language: TmdbLanguage | None = TmdbLanguage.EN_US
+    language: TmdbLanguage = TmdbLanguage.EN_US
     year: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
