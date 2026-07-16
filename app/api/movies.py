@@ -10,7 +10,7 @@ from app.services.favorites import (
     add_movie_to_user_favorites,
     get_favorite_movies,
 )
-from app.services.movies import get_movie_details
+from app.services.movies import get_movie_details, set_genres
 from app.services.tmdb import TmdbError, TmdbLanguage, TmdbMovieNotFoundError
 
 router = APIRouter(prefix="/movies", tags=["Movies"])
@@ -32,6 +32,13 @@ def get_movie(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),
         ) from exc
+
+
+@router.post("/genre/list")
+def update_genres(
+        db: SessionDep,
+) -> None:
+    set_genres(db)
 
 
 @router.post(

@@ -49,7 +49,20 @@ class TmdbClient:
 
         return self._handle_response(response, movie_id)
 
-    def _handle_response(self, response: requests.Response, movie_id: int) -> dict:
+    def get_all_tmdb_movies_genres(self) -> dict:
+        try:
+            r = requests.get(
+                f"{self.base_url}/genre/movie/list",
+                headers=self.headers,
+                timeout=self.timeout,
+            )
+        except requests.Timeout as exc:
+            raise TmdbError("TMDB request timed out") from exc
+
+        return self._handle_response(r)
+
+
+    def _handle_response(self, response: requests.Response, movie_id: int | None = None) -> dict:
         if response.status_code == 200:
             return response.json()
 

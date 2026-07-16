@@ -78,3 +78,15 @@ def _get_or_create_genres(
         genres.append(genre)
 
     return genres
+
+
+def set_genres(db: Session) -> None:
+    genres = tmdb_client.get_all_tmdb_movies_genres()
+    _get_or_create_genres(db, genres.get("genres", []))
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
