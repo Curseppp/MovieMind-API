@@ -9,14 +9,15 @@ from app.schemas.movies import PublicMovie, QueryParams
 from app.services.tmdb import TmdbLanguage, tmdb_client
 
 
-def search_movie(db: Session, query: QueryParams, skip: int, limit: int) -> list[PublicMovie]:
+def search_movie(
+    db: Session, query: QueryParams, skip: int, limit: int
+) -> list[PublicMovie]:
     payload = dict(query)
     start_page = skip // 20 + 1
     offset_page = skip % 20
     movies = []
     payload["page"] = start_page
     total_pages = 999
-
 
     while len(movies) < limit and payload["page"] <= total_pages:
         response = tmdb_client.get_tmdb_movies_by_title(payload)
@@ -31,12 +32,10 @@ def search_movie(db: Session, query: QueryParams, skip: int, limit: int) -> list
                 poster_path = movie.get("poster_path")
                 genres = genres_crud.get_genres_by_tmdb_ids(db, movie["genre_ids"])
                 details = PublicMovie(
+                    tmdb_id=movie["id"],
                     original_title=movie["original_title"],
                     release_date=movie["release_date"],
-                    genres=[
-                        genre.name
-                        for genre in genres.values()
-                    ],
+                    genres=[genre.name for genre in genres.values()],
                     vote_average=movie["vote_average"],
                     vote_count=movie["vote_count"],
                     poster_url=tmdb_client.get_tmdb_poster_url(poster_path),
@@ -52,6 +51,7 @@ def get_movie_details(movie_id: int, language: TmdbLanguage) -> PublicMovie:
     poster_path = movie.get("poster_path")
 
     details = PublicMovie(
+        tmdb_id=movie["id"],
         original_title=movie["original_title"],
         release_date=movie["release_date"],
         genres=[genre["name"] for genre in movie["genres"]],
@@ -127,4 +127,3 @@ def set_genres(db: Session) -> None:
     except Exception:
         db.rollback()
         raise
-

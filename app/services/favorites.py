@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.crud import favorites as favorites_crud
+from app.crud import movies as movies_crud
 from app.crud import users as users_crud
 from app.models import FavoriteMovie, User
 from app.crud.movies import (
@@ -17,6 +18,10 @@ class UserNotFoundError(Exception):
 
 
 class FavoriteAlreadyExistsError(Exception):
+    pass
+
+
+class FavoriteNotFoundError(Exception):
     pass
 
 
@@ -63,3 +68,24 @@ def get_favorite_movies(
     )
 
     return [to_public_movie(movie) for movie in movies]
+
+
+def remove_movie_from_user_favorites(
+    db: Session,
+    user_id: int,
+    tmdb_id: int,
+) -> None:
+    movie = movies_crud.get_movie_by_tmdb_id(db, tmdb_id)
+    if movie is None:
+        raise FavoriteNotFoundError(f"Movie with TMDB id {tmdb_id} is not in favorites")
+
+    favorite = favorites_crud.get_favorite(db, user_id, movie.id)
+    if favorite is None:
+        raise FavoriteNotFoundError(f"Movie with TMDB id {tmdb_id} is not in favorites")
+
+    try:
+        favorites_crud.delete_favorite(db, favorite)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise

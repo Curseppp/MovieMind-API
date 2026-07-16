@@ -17,6 +17,7 @@ class Movie(BaseModel):
 
 
 class PublicMovie(BaseModel):
+    tmdb_id: int
     original_title: str
     release_date: str
     genres: list[str]
@@ -36,4 +37,3 @@ class QueryParams(BaseModel):
     year: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
-

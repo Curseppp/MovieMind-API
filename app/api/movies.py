@@ -6,9 +6,11 @@ from app.schemas.favorites import FavoriteMovieResponse
 from app.schemas.movies import PublicMovie, QueryParams
 from app.services.favorites import (
     FavoriteAlreadyExistsError,
+    FavoriteNotFoundError,
     UserNotFoundError,
     add_movie_to_user_favorites,
     get_favorite_movies,
+    remove_movie_from_user_favorites,
 )
 from app.services.movies import get_movie_details, search_movie, set_genres
 from app.services.tmdb import TmdbError, TmdbLanguage, TmdbMovieNotFoundError
@@ -48,12 +50,9 @@ def search_movies(
 
 @router.post("/genre/list")
 def update_genres(
-        db: SessionDep,
-
+    db: SessionDep,
 ) -> None:
     set_genres(db)
-
-
 
 
 @router.post(
@@ -94,6 +93,28 @@ def add_movie_to_favorite(
     except TmdbError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+
+
+@router.delete(
+    "/{movie_id}/favorite",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remove_movie_from_favorite(
+    session: SessionDep,
+    movie_id: int,
+    user: CurrentUserDep,
+) -> None:
+    try:
+        remove_movie_from_user_favorites(
+            db=session,
+            user_id=user.id,
+            tmdb_id=movie_id,
+        )
+    except FavoriteNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
 

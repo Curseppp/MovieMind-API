@@ -20,3 +20,7 @@ def create_favorite(
     db.add(favorite)
     db.flush()
     return favorite
+
+
+def delete_favorite(db: Session, favorite: FavoriteMovie) -> None:
+    db.delete(favorite)

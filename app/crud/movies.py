@@ -40,6 +40,7 @@ def get_favorite_movies_by_user_id(
 
 def to_public_movie(movie: Movie) -> PublicMovie:
     return PublicMovie(
+        tmdb_id=movie.tmdb_id,
         original_title=movie.original_title or "",
         release_date=(movie.release_date.isoformat() if movie.release_date else ""),
         genres=[genre.name for genre in movie.genres],
